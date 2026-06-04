@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from app.services import chat_service
+from app.database.db import engine, Base
+from app.models import conversation, message
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

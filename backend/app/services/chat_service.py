@@ -14,7 +14,7 @@ def send_messages(conversation_id: int, content: str):
         conversation_id, "user", content
     )
     assistant_message = chat_repository.create_message(
-        conversation_id, "assistant", f"You said: {content}"
+        conversation_id, "assistant", "Message Received"
     )
     return {
         "user_message": user_message,
