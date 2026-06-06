@@ -26,11 +26,9 @@ class MessageCreate(BaseModel):
     conversation_id: int
     content: str
 
-
 @app.get("/")
 def root():
     return {"message": "Chat API is running"}
-
 
 @app.get("/debug/db-status")
 def db_status():

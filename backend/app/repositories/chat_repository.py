@@ -70,3 +70,15 @@ def delete_conversation(conversation_id: int):
         session.commit()
         return {"id": conversation_id}
 
+def update_conversation(conversation_id: int, title: str):
+    with SessionLocal() as session:
+        conversation = session.query(Conversation).filter(
+            Conversation.id == conversation_id
+        ).first()
+        if not conversation:
+            return None
+        conversation.title = title
+        session.commit()
+        session.refresh(conversation)
+        return serialize_conversation(conversation)
+
