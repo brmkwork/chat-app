@@ -7,3 +7,7 @@ python-dotenv
 pymupdf
 chromadb
 groq
+langchain
+langchain-google-genai
+langchain-groq
+langchain-chroma
