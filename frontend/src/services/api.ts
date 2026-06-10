@@ -41,3 +41,21 @@ export async function deleteConversation(conversationId: number): Promise<{ dele
   if (!res.ok) throw new Error("Failed to delete conversation")
   return res.json()
 }
+
+export async function uploadPDF(conversationId: number, file: File): Promise<any> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const res = await fetch(`${BASE_URL}/conversations/${conversationId}/upload`, {
+    method: "POST",
+    body: formData
+  })
+  if (!res.ok) throw new Error("Failed to upload PDF")
+  return res.json()
+}
+
+export async function getConversationDocument(conversationId: number): Promise<{ filename: string } | null> {
+  const res = await fetch(`${BASE_URL}/conversations/${conversationId}/document`)
+  if (!res.ok) throw new Error("Failed to fetch document metadata")
+  const data = await res.json()
+  return data.document ?? null
+}
