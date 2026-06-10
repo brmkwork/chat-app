@@ -1,6 +1,5 @@
 from app.database.db import SessionLocal
-from app.models.conversation import Conversation
-from app.models.message import Message
+from app.models import Conversation, Message, Document
 
 
 def serialize_conversation(conv: Conversation) -> dict:

@@ -1,11 +1,13 @@
-import os
-import sqlite3
+import shutil
+from fastapi import File, UploadFile
+from app.services import document_service
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.services import chat_service
 from app.database.db import engine, Base
 from app.models import conversation, message
+from app.models import conversation, message, document, chunk
 
 app = FastAPI()
 
@@ -30,21 +32,6 @@ class MessageCreate(BaseModel):
 def root():
     return {"message": "Chat API is running"}
 
-@app.get("/debug/db-status")
-def db_status():
-    db_path = os.path.abspath("./chat.db")
-    counts = {}
-    try:
-        with sqlite3.connect(db_path) as conn:
-            cur = conn.cursor()
-            for table in ["conversations", "messages"]:
-                cur.execute(f"SELECT count(*) FROM {table}")
-                counts[table] = cur.fetchone()[0]
-    except Exception as e:
-        return {"db_path": db_path, "error": str(e)}
-
-    return {"db_path": db_path, "counts": counts}
-
 
 @app.get("/conversations")
 def get_conversations():
@@ -61,6 +48,14 @@ def get_messages(conversation_id: int):
     return chat_service.get_messages(conversation_id)
 
 
+@app.get("/conversations/{conversation_id}/document")
+def get_conversation_document(conversation_id: int):
+    document = document_service.get_document(conversation_id)
+    if document is None:
+        return {"document": None}
+    return {"document": document}
+
+
 @app.post("/messages")
 def send_message(body: MessageCreate):
     return chat_service.send_message(body.conversation_id, body.content)
@@ -72,3 +67,11 @@ def delete_conversation(conversation_id: int):
     if result is None:
         return {"deleted": False}
     return {"deleted": True, "id": conversation_id}
+
+@app.post("/conversations/{conversation_id}/upload")
+async def upload_pdf(conversation_id: int, file: UploadFile = File(...)):
+    file_path = f"app/uploads/{conversation_id}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    result = document_service.process_pdf(conversation_id, file.filename, file_path)
+    return result

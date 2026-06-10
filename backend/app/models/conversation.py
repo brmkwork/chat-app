@@ -10,4 +10,13 @@ class Conversation(Base):
     title = Column(String, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
-    messages = relationship("Message", back_populates="conversation")
+    messages = relationship(
+        "Message",
+        back_populates="conversation",
+        cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "Document",
+        back_populates="conversation",
+        cascade="all, delete-orphan"
+    )

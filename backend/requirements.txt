@@ -2,5 +2,8 @@ fastapi
 uvicorn[standard]
 pydantic
 sqlalchemy
-google-genai
+groq
 python-dotenv
+pymupdf
+chromadb
+groq
