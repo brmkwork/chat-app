@@ -130,7 +130,6 @@
 import fitz
 import logging
 import os
-import shutil
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -139,44 +138,31 @@ from app.repositories import document_repository
 from app.services.file_handlers.file_manager import FileManager
 from app.models.document import Document
 
-dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
-load_dotenv(dotenv_path)
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 UPLOAD_DIR = "app/uploads"
 CHROMA_DIR = "./chroma_db"
 
-file_manager = FileManager()
-
-def get_gemini_api_key() -> str | None:
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-
-
-def get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    api_key = get_gemini_api_key()
-    if not api_key:
-        raise RuntimeError(
-            "Gemini API key required. Set GEMINI_API_KEY or GOOGLE_API_KEY in your environment or .env file."
-        )
-    return GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001",
-        google_api_key=api_key
-    )
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-001",
+    google_api_key=os.getenv("GEMINI_API_KEY")
+)
 
 
-# def extract_text_from_pdf(file_path: str) -> str:
-#     doc = fitz.open(file_path)
-#     text = ""
-#     for page in doc:
-#         text += page.get_text()
-#     doc.close()
-#     return text
+def extract_text_from_pdf(file_path: str) -> str:
+    doc = fitz.open(file_path)
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    doc.close()
+    return text
 
 
 def get_vectorstore(conversation_id: int) -> Chroma:
     return Chroma(
         persist_directory=f"{CHROMA_DIR}/conversation_{conversation_id}",
-        embedding_function=get_embeddings(),
+        embedding_function=embeddings,
         collection_name=f"conversation_{conversation_id}"
     )
 
@@ -187,23 +173,8 @@ def process_pdf(conversation_id: int, filename: str, file_path: str) -> dict:
     document_repository.delete_collection(conversation_id)
     document_repository.delete_documents_by_conversation(conversation_id)
 
-    persist_dir = f"{CHROMA_DIR}/conversation_{conversation_id}"
-    if os.path.exists(persist_dir):
-        shutil.rmtree(persist_dir)
-    
-    text, file_type, handler_used = (
-        file_manager.extract_text(file_path)
-    )
-    print("HANDLER:", handler_used)
-    print("FILE TYPE:", file_type)
-    document = document_repository.create_document(conversation_id=conversation_id, filename=filename, file_type=file_type, raw_text=text)
-    
-
-    logger.info(
-    "DocumentService -> handler=%s file_type=%s",
-    handler_used,
-    file_type
-)
+    document = document_repository.create_document(conversation_id, filename)
+    text = extract_text_from_pdf(file_path)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -214,7 +185,7 @@ def process_pdf(conversation_id: int, filename: str, file_path: str) -> dict:
 
     Chroma.from_texts(
         texts=chunks,
-        embedding=get_embeddings(),
+        embedding=embeddings,
         persist_directory=f"{CHROMA_DIR}/conversation_{conversation_id}",
         collection_name=f"conversation_{conversation_id}"
     )
