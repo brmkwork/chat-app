@@ -12,6 +12,10 @@ from app.models import conversation, message
 from app.models import conversation, message, document, chunk
 from app.tools.read_file_tool import read_file_tool
 from app.tools.rag_search_tool import rag_search_tool
+from app.services.local_file_service import search_files
+from app.services.file_handlers.file_manager import FileManager
+
+file_manager = FileManager()
 
 logging.basicConfig(
     level=logging.INFO,

@@ -10,7 +10,9 @@ from langchain_classic.agents import create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import MessagesPlaceholder
 
+from app.tools.search_local_files_tool import search_local_files_tool
 from app.tools.read_file_tool import read_file_tool
+from app.tools.load_file_tool import load_file_tool
 from app.tools.rag_search_tool import rag_search_tool
 
 load_dotenv()
@@ -22,7 +24,9 @@ llm = init_chat_model(
 )
 
 tools = [
+    search_local_files_tool,
     read_file_tool,
+    load_file_tool,
     rag_search_tool
 ]
 
@@ -30,21 +34,39 @@ prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            """
-You are a document assistant.
+    """
+    You are a local file assistant.
 
-Use read_file_tool when:
-- user asks to read the file
-- user asks what is in the file
-- user asks to display the document
-- user asks for complete contents
+    Available tools:
 
-Use rag_search_tool when:
-- user asks questions about the file
-- user wants information extracted
-- user wants summaries
+    search_local_files_tool
+    - Find files on the user's machine.
 
-Always choose the most appropriate tool.
+    read_file_tool
+    - Read the entire contents of a file.
+
+    load_file_tool
+    - Load a file into the vector database.
+
+    rag_search_tool
+    - Answer questions about a previously loaded file.
+
+    Rules:
+
+    If the user asks to find a file:
+    use search_local_files_tool
+
+    If the user asks to read a file:
+    first find the file
+    then read it
+
+    If the user asks questions about a file:
+    load it first
+    then use rag_search_tool
+
+    Never make up file paths.
+    Always use tools.
+    choose the most appropriate tool.
 """
         ),
         ("human", "{input}"),
@@ -61,7 +83,7 @@ agent = create_tool_calling_agent(
 agent_executor = AgentExecutor(
     agent=agent,
     tools=tools,
-    verbose=True
+    verbose=False
 )
 
 def ask_agent(

@@ -1,25 +1,41 @@
 from langchain.tools import tool
-from app.repositories import document_repository
+from app.services.file_handlers.file_manager import FileManager
+import logging
 
-@tool
-def read_file_tool(conversation_id: int) -> str:
+logger = logging.getLogger(__name__)
 
+file_manager = FileManager()
+
+
+@tool(return_direct=True)
+def read_file_tool(file_path: str) -> str:
     """
-    Read the entire uploaded document.
+    Return the COMPLETE, RAW contents of a file. No summarization. No analysis.
 
-    Use when the user asks:
-    - what is in the file
-    - show the file
-    - read the document
-    - display document contents
+    Use this tool ONLY when the user explicitly asks to:
+      - "read" a file
+      - "open" a file
+      - "show" a file
+      - "display" a file
+      - "print" a file
+      - "give me" / "show me" the contents of a file
+      - "what is in" a file (when they want the full text, not an answer)
+
+    DO NOT use this tool when the user asks a QUESTION about a file
+    (e.g. "what skills are mentioned?", "summarize", "explain", "how many...").
+    For questions, use load_file_tool followed by rag_search_tool instead.
+
+    Returns the entire file content as a single string.
     """
-    global CURRENT_CONVERSATION_ID
-    CURRENT_CONVERSATION_ID = conversation_id
 
-   
-    document = document_repository.get_document_by_conversation(CURRENT_CONVERSATION_ID)
+    text, file_type, handler_used = file_manager.extract_text(file_path)
 
-    if not document:
-        return "No document found."
-     
-    return document["raw_text"]
+    logger.info(
+        "READ_FILE_TOOL -> handler=%s type=%s length=%d",
+        handler_used,
+        file_type,
+        len(text),
+    )
+
+    # Return raw text. Do NOT add commentary. Do NOT summarize.
+    return text
