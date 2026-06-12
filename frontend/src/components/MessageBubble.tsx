@@ -18,7 +18,10 @@ export function MessageBubble({ message }: Props) {
         color: "white",
         padding: "10px 14px",
         borderRadius: "12px",
-        maxWidth: "70%"
+        maxWidth: "70%",
+        overflowWrap: "break-word",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word"
       }}>
         {message.content}
       </div>

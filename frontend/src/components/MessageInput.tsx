@@ -43,6 +43,8 @@ export function MessageInput({ onSend, disabled }: Props) {
           background: "#1a1a1a",
           color: "white",
           resize: "none",
+          overflowY: "auto",
+          maxHeight: "150px",
           fontSize: "14px"
         }}
       />
