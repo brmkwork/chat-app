@@ -9,6 +9,8 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False)
     filename = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    raw_text = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
     conversation = relationship("Conversation", back_populates="documents")

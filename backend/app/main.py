@@ -1,4 +1,6 @@
 import shutil
+import logging
+import langchain
 from fastapi import File, UploadFile
 from app.services import document_service
 from fastapi import FastAPI
@@ -8,6 +10,13 @@ from app.services import chat_service
 from app.database.db import engine, Base
 from app.models import conversation, message
 from app.models import conversation, message, document, chunk
+from app.tools.read_file_tool import read_file_tool
+from app.tools.rag_search_tool import rag_search_tool
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 app = FastAPI()
 
@@ -69,9 +78,31 @@ def delete_conversation(conversation_id: int):
     return {"deleted": True, "id": conversation_id}
 
 @app.post("/conversations/{conversation_id}/upload")
-async def upload_pdf(conversation_id: int, file: UploadFile = File(...)):
+async def upload_file(conversation_id: int, file: UploadFile = File(...)):
     file_path = f"app/uploads/{conversation_id}_{file.filename}"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     result = document_service.process_pdf(conversation_id, file.filename, file_path)
     return result
+
+# @app.get("/conversations/{conversation_id}/read")
+# def read_document(conversation_id: int):
+#     return {
+#         "content": read_file_tool.invoke(
+#             {"conversation_id": conversation_id}
+#         )
+#     }
+
+# @app.get("/conversations/{conversation_id}/search")
+# def search_document(
+#     conversation_id: int,
+#     q: str
+# ):
+#     return {
+#         "result": rag_search_tool.invoke(
+#             {
+#                 "conversation_id": conversation_id,
+#                 "query": q
+#             }
+#         )
+#     }

@@ -127,11 +127,13 @@ def delete_collection(conversation_id: int):
         pass
 
 
-def create_document(conversation_id: int, filename: str) -> dict:
+def create_document(conversation_id: int, filename: str, file_type: str, raw_text: str) -> dict:
     with SessionLocal() as session:
         document = Document(
             conversation_id=conversation_id,
-            filename=filename
+            filename=filename,
+            file_type=file_type,
+            raw_text=raw_text
         )
         session.add(document)
         session.commit()
@@ -161,4 +163,4 @@ def get_document_by_conversation(conversation_id: int) -> dict | None:
         )
         if not document:
             return None
-        return {"id": document.id, "filename": document.filename}
+        return {"id": document.id, "filename": document.filename, "file_type": document.file_type, "raw_text": document.raw_text}

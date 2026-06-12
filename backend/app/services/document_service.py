@@ -136,6 +136,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
 from app.repositories import document_repository
+from app.services.file_handlers.file_manager import FileManager
+from app.models.document import Document
 
 dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 load_dotenv(dotenv_path)
@@ -144,6 +146,7 @@ logger = logging.getLogger(__name__)
 UPLOAD_DIR = "app/uploads"
 CHROMA_DIR = "./chroma_db"
 
+file_manager = FileManager()
 
 def get_gemini_api_key() -> str | None:
     return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
@@ -161,13 +164,13 @@ def get_embeddings() -> GoogleGenerativeAIEmbeddings:
     )
 
 
-def extract_text_from_pdf(file_path: str) -> str:
-    doc = fitz.open(file_path)
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    doc.close()
-    return text
+# def extract_text_from_pdf(file_path: str) -> str:
+#     doc = fitz.open(file_path)
+#     text = ""
+#     for page in doc:
+#         text += page.get_text()
+#     doc.close()
+#     return text
 
 
 def get_vectorstore(conversation_id: int) -> Chroma:
@@ -179,15 +182,28 @@ def get_vectorstore(conversation_id: int) -> Chroma:
 
 
 def process_pdf(conversation_id: int, filename: str, file_path: str) -> dict:
+
+    print("===== PROCESS PDF STARTED =====")
     document_repository.delete_collection(conversation_id)
     document_repository.delete_documents_by_conversation(conversation_id)
 
     persist_dir = f"{CHROMA_DIR}/conversation_{conversation_id}"
     if os.path.exists(persist_dir):
         shutil.rmtree(persist_dir)
+    
+    text, file_type, handler_used = (
+        file_manager.extract_text(file_path)
+    )
+    print("HANDLER:", handler_used)
+    print("FILE TYPE:", file_type)
+    document = document_repository.create_document(conversation_id=conversation_id, filename=filename, file_type=file_type, raw_text=text)
+    
 
-    document = document_repository.create_document(conversation_id, filename)
-    text = extract_text_from_pdf(file_path)
+    logger.info(
+    "DocumentService -> handler=%s file_type=%s",
+    handler_used,
+    file_type
+)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
